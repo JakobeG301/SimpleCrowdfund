@@ -8,6 +8,12 @@ import {SimpleCrowdfund} from "../src/SimpleCrowdfund.sol";
 contract SimpleCrowdfundTest is Test {
     SimpleCrowdfund simpleCrowdfund;
 
+    uint256 contractBalance;
+
+    function checkBalance() internal returns (uint256) {
+        contractBalance = address(simpleCrowdfund).balance;
+    }
+
     function setUp() external {
         address _owner = address(this);
         uint256 _secToComplete = 30;
@@ -15,6 +21,7 @@ contract SimpleCrowdfundTest is Test {
 
         simpleCrowdfund = new SimpleCrowdfund(_owner, _secToComplete, _GOAL);
 
+        checkBalance();
         vm.recordLogs();
     }
 
@@ -47,19 +54,18 @@ contract SimpleCrowdfundTest is Test {
         //  And the ContributorsList should be empty
         vm.deal(address(2), 100e18);
         vm.recordLogs();
-        console.log("balance:", address(simpleCrowdfund).balance);
+        console.log("balance:", contractBalance);
         address _owner = address(this);
-        uint256 contractBalance = address(simpleCrowdfund).balance;
 
         assertEq(simpleCrowdfund.i_owner(), _owner);
-        console.log("balance:", address(simpleCrowdfund).balance);
-        assertEq(address(simpleCrowdfund).balance, 0);
+        console.log("balance:", contractBalance);
+        assertEq(contractBalance, 0);
         console.log("secondsToComplete:", simpleCrowdfund.i_secToComplete());
         console.log("timeInitiation:", simpleCrowdfund.i_timeInitiation());
         console.log("deadline:", simpleCrowdfund.i_deadline());
         assertEq(simpleCrowdfund.i_deadline(), simpleCrowdfund.i_secToComplete() + block.timestamp);
         assertEq(simpleCrowdfund.GOAL(), 2e18);
-        assertEq(simpleCrowdfund.amountRaised(), 0);
+        assertEq(contractBalance, 0);
         assertEq(simpleCrowdfund.campaignEnded(), false);
         assertEq(simpleCrowdfund.goalReached(), false);
         assertEq(simpleCrowdfund.fundsWithdrawned(), false);
@@ -95,15 +101,15 @@ contract SimpleCrowdfundTest is Test {
         console.log("Array length1:", simpleCrowdfund.GetContributorsListLength());
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 1 ether}();
+        checkBalance();
 
         console.log("MINIMAL_AMOUNT:", simpleCrowdfund.MINIMAL_AMOUNT());
         console.log("Current goal reached:", simpleCrowdfund.goalReached());
         console.log("Funds withdrawn:", simpleCrowdfund.fundsWithdrawned());
         console.log("Time passed:", simpleCrowdfund.timePassed());
 
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) ==  1 ether, true,  "Value is not mapped!");
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 1 ether, true, "Value is not mapped!");
         console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
-
 
         // SimpleCrowdfund(payable(address(simpleCrowdfund))).contribute{value: 0.001 ether}();
         console.log("Array length:", simpleCrowdfund.GetContributorsListLength());
@@ -125,29 +131,29 @@ contract SimpleCrowdfundTest is Test {
         // Then the amountRaised in the contract should be 0.001 ETH
         // And the contribution mapping for Robert should be 0.001 ETH
         // And the contract should log a "Contributed" event with (Robert, 0.001 ETH)
-        
+
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("");
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
         console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
-        assertEq(simpleCrowdfund.amountRaised(), 0.001 ether);
+        assertEq(contractBalance, 0.001 ether);
 
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) ==  0.001 ether, true,  "Value is not mapped!");
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, true, "Value is not mapped!");
         console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
 
-        assertEq(address(simpleCrowdfund).balance, 0.001 ether);
-
+        assertEq(contractBalance, 0.001 ether);
     }
 
     function test_SendLessThanMinimumByReceive() public {
@@ -167,13 +173,13 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
         (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.0001 ether}("");
+        checkBalance();
         Vm.Log[] memory records = vm.getRecordedLogs();
-        assertEq(address(simpleCrowdfund).balance, 0, "Balance should be 0 ETH");
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) ==  0 ether, true,  "Value is mapped!");
+        assertEq(contractBalance, 0, "Balance should be 0 ETH");
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0 ether, true, "Value is mapped!");
         console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         assertEq(records.length, 0, "Event was emited!");
-        assertEq(simpleCrowdfund.amountRaised(), 0 ether);
-        assertEq(simpleCrowdfund.amountRaised(), 0, "Amount raised is more than 0");
+        assertEq(contractBalance, 0, "Amount raised is more than 0");
     }
 
     function test_SendByFallback() public {
@@ -184,22 +190,22 @@ contract SimpleCrowdfundTest is Test {
         // Then the amountRaised in the contract should be 0.001 ETH
         // And the contribution mapping for Robert should be 0.001 ETH
         // And the contract should log a "Contributed" event with (Robert, 0.001 ETH)
-        
-        vm.deal(address(2), 100e18);
+
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600, 2e18);
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
-        vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
         (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("0x12");
+        console.log("a2", address(2));
+        checkBalance();
         assertEq(success, true, "Transaction failed");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        assertEq(address(simpleCrowdfund).balance, 0.001 ether, "Balance should be 0.001 ether");
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) ==  0.001 ether, true,  "Value is not mapped!");
+        assertEq(contractBalance, 0.001 ether, "Balance should be 0.001 ether");
+        console.log("mapping for Robert:", simpleCrowdfund.GetContributorToAmount(address(2)));
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, true, "Value is not mapped!");
         console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         assertEq(records.length, 1, "Event was not emited!");
-        assertEq(simpleCrowdfund.amountRaised(), 0.001 ether);
-        assertEq(simpleCrowdfund.amountRaised(), 0.001 ether, "Amount raised is not the 0.001 ether");
+        assertEq(contractBalance, 0.001 ether, "Amount raised is not the 0.001 ether");
     }
 
     function test_SendLessThanMinimumByFallback() public {
@@ -218,18 +224,15 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
-
-        (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.0001 ether}("0x12");
-        
-        assertEq(success, false, "Transaction succed, but shouldn't");
+        payable(address(simpleCrowdfund)).call{value: 0 ether}("0x12");
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         Vm.Log[] memory records = vm.getRecordedLogs();
-        assertEq(address(simpleCrowdfund).balance, 0 ether, "Balance should be 0 ether");
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) ==  0 ether, true,  "Value is mapped!");
+        assertEq(contractBalance, 0 ether, "Balance should be 0 ether");
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0 ether, true, "Value is mapped!");
         console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         assertEq(records.length, 0, "Event was emited!");
-        assertEq(simpleCrowdfund.amountRaised(), 0 ether);
-        assertEq(simpleCrowdfund.amountRaised(), 0 ether, "Amount raised is more than 0 ether");
-        
+        assertEq(contractBalance, 0 ether, "Amount raised is more than 0 ether");
     }
 
     function test_LessThanMinimumEth() public {
@@ -241,20 +244,22 @@ contract SimpleCrowdfundTest is Test {
         //  And the amountRaised in the contract remains 0 ETH
         //  And the contribution mapping for Jakob should be 0 ETH
         //  And the contract should not log a "Contributed" event
-        
+
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600, 2e18);
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
-        simpleCrowdfund.contribute{value: 0.0001 ether}();
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
-        assertEq(address(simpleCrowdfund).balance, 0, "Balance should be 0 ETH");
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) ==  0.001 ether, true,  "Value is not mapped!");
+        simpleCrowdfund.contribute{value: 0.0001 ether}();
+        checkBalance();
+
+        assertEq(contractBalance, 0, "Balance should be 0 ETH");
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0 ether, true, "Value is mapped!");
         console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(records.length, 0, "Event was emmited!");
-        assertEq(simpleCrowdfund.amountRaised(), 0 ether);
+        assertEq(contractBalance, 0 ether);
     }
 
     function test_MoreThanMinimumEth() public {
@@ -268,20 +273,20 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 0.002 ether}();
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
         console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
-        assertEq(simpleCrowdfund.amountRaised(), 0.002 ether);
-        assertEq(address(simpleCrowdfund).balance, 0.002 ether);
+        assertEq(contractBalance, 0.002 ether);
     }
 
     function test_ExaclyMinimumEth() public {
@@ -295,73 +300,72 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 0.001 ether}();
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
         console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
-        assertEq(simpleCrowdfund.amountRaised(), 0.001 ether);
-        assertEq(address(simpleCrowdfund).balance, 0.001 ether);
+        assertEq(contractBalance, 0.001 ether);
     }
 
-
-    function test_OneWeiBelowMinimumEth() public{
-    // Scenario: Contributing one wei below the minimum amount
-    //  Given the contract is deployed with goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
-    //  And user "Jakob" has 100 ETH in her wallet
-    //  When Jakob calls "contribute()" with 0,000999999999999999 ETH (999999999999999 Wei)
-    //  Then the transaction should revert with SimpleCrowdfund__ToLittleDonation() error
-    //  And the amountRaised in the contract remains 0 ETH
-    //  And the contribution mapping for Jakob should be 0 ETH
-    //  And the contract should not log a "Contributed" event
+    function test_OneWeiBelowMinimumEth() public {
+        // Scenario: Contributing one wei below the minimum amount
+        //  Given the contract is deployed with goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
+        //  And user "Jakob" has 100 ETH in her wallet
+        //  When Jakob calls "contribute()" with 0,000999999999999999 ETH (999999999999999 Wei)
+        //  Then the transaction should revert with SimpleCrowdfund__ToLittleDonation() error
+        //  And the amountRaised in the contract remains 0 ETH
+        //  And the contribution mapping for Jakob should be 0 ETH
+        //  And the contract should not log a "Contributed" event
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600, 2e18);
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
-        simpleCrowdfund.contribute{value: 1e15- 1}();
-        assertEq(address(simpleCrowdfund).balance, 0, "Balance should be 0 ETH");
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) ==  0 , true,  "Value is not mapped!");
+        simpleCrowdfund.contribute{value: 1e15 - 1}();
+        checkBalance();
+        assertEq(contractBalance, 0, "Balance should be 0 ETH");
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0, true, "Value is not mapped!");
         console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         Vm.Log[] memory records = vm.getRecordedLogs();
-        assertEq(simpleCrowdfund.amountRaised(), 0 ether);
+        assertEq(contractBalance, 0 ether);
         assertEq(records.length, 0, "Event was emmited!");
     }
 
-    function test_OneWeiAboveMinimumEth() public{
-    // Scenario: Contributing one wei above the minimum amount
-    //  Given the contract is deployed with goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
-    //  And user "Jakob" has 100 ETH in her wallet
-    //  When Jakob calls "contribute()" with 0,001000000000000001 ETH (1000000000000001 Wei)
-    //  Then the amountRaised in the contract should be 0,001000000000000001 ETH
-    //  And the contribution mapping for Jakob should be 0,001000000000000001 ETH
-    //  And the contract should log a "Contributed" event with (Jakob, 0,001000000000000001 ETH)
+    function test_OneWeiAboveMinimumEth() public {
+        // Scenario: Contributing one wei above the minimum amount
+        //  Given the contract is deployed with goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
+        //  And user "Jakob" has 100 ETH in her wallet
+        //  When Jakob calls "contribute()" with 0,001000000000000001 ETH (1000000000000001 Wei)
+        //  Then the amountRaised in the contract should be 0,001000000000000001 ETH
+        //  And the contribution mapping for Jakob should be 0,001000000000000001 ETH
+        //  And the contract should log a "Contributed" event with (Jakob, 0,001000000000000001 ETH)
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 0.001 ether + 1 wei}();
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
         console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
-        assertEq(simpleCrowdfund.amountRaised(), 0.001 ether + 1 wei);
-        assertEq(address(simpleCrowdfund).balance, 0.001 ether + 1 wei, "Contribute failed!");
-
+        assertEq(contractBalance, 0.001 ether + 1 wei, "Contribute failed!");
     }
 
     function test_ContributeBeforeDeadline() public {
@@ -373,16 +377,17 @@ contract SimpleCrowdfundTest is Test {
         //  And the amountRaised in the contract should be 5 ETH
         //  And the contribution mapping for Alice should be 5 ETH
         bool eventFound = false;
-        
+
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 600, 10e18);
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 5 ether}();
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
@@ -393,8 +398,7 @@ contract SimpleCrowdfundTest is Test {
         assertEq(eventFound, true, "No event was emitet!");
 
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
-        assertEq(simpleCrowdfund.amountRaised(), 5 ether);
-        assertEq(address(simpleCrowdfund).balance, 5 ether);
+        assertEq(contractBalance, 5 ether);
     }
 
     function test_ContributeAfterDeadline() public {
@@ -406,17 +410,18 @@ contract SimpleCrowdfundTest is Test {
         //   Then the transaction should revert with SimpleCrowdfund__CampaignIsEnded()
         //   And the amountRaised in the contract remains 0 ETH
         bool eventFound = false;
-        
+
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 60, 10e18);
         vm.warp(simpleCrowdfund.i_timeInitiation() + simpleCrowdfund.i_secToComplete() + 10);
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 1 ether}();
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Robert balance:", address(2).balance);
 
         Vm.Log[] memory records = vm.getRecordedLogs();
@@ -426,9 +431,7 @@ contract SimpleCrowdfundTest is Test {
         // assertEq(eventFound, true, "No event was emitet!");
 
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
-        assertEq(simpleCrowdfund.amountRaised(), 0 ether);
-        assertEq(address(simpleCrowdfund).balance, 0 ether);
-
+        assertEq(contractBalance, 0 ether);
     }
 
     function test_ContributeBeforeGoalReached() public {
@@ -440,15 +443,16 @@ contract SimpleCrowdfundTest is Test {
         //   And the contract should log a "Contributed" event
 
         bool eventFound = true;
-        
+
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 600, 10e18);
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
@@ -459,9 +463,7 @@ contract SimpleCrowdfundTest is Test {
         assertEq(eventFound, true, "No event was emitet!");
 
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
-        assertEq(simpleCrowdfund.amountRaised(), 7 ether);
-        assertEq(address(simpleCrowdfund).balance, 7 ether);
-
+        assertEq(contractBalance, 7 ether);
     }
 
     function test_ContributeAfterGoalReached() public {
@@ -476,25 +478,27 @@ contract SimpleCrowdfundTest is Test {
         //   And the Eve should not be in the ContributorsList
         //   And the contract should not log a "Contributed" event
         uint256 eventFound = 0;
-        
-        vm.deal(address(2), 100e18);
+
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 60, 10 ether);
+
         vm.deal(address(3), 100e18);
         vm.prank(address(3));
         simpleCrowdfund.contribute{value: 6 ether}();
+        checkBalance();
 
         vm.deal(address(4), 100e18);
         vm.prank(address(4));
-        simpleCrowdfund.contribute{value: 3 ether}();
+        simpleCrowdfund.contribute{value: 5 ether}();
+        checkBalance();
 
-        
-        console.log("Contract balance Before:", address(simpleCrowdfund).balance);
+        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 1 ether}();
-        console.log("Contract balance After:", address(simpleCrowdfund).balance);
+        checkBalance();
+        console.log("Contract balance After:", contractBalance);
         console.log("Alice balance:", address(2).balance);
 
         Vm.Log[] memory records = vm.getRecordedLogs();
@@ -504,9 +508,8 @@ contract SimpleCrowdfundTest is Test {
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         assertEq(eventFound, 2);
 
-        assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
-        assertEq(simpleCrowdfund.amountRaised(), 0 ether);
-        assertEq(address(simpleCrowdfund).balance, 0 ether);
+        assertEq(simpleCrowdfund.goalReached(), true, "Goal should be false!");
+        assertEq(contractBalance, 11 ether);
     }
 
     function test_AddingContributors() public {

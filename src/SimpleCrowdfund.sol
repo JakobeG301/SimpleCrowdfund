@@ -3,7 +3,6 @@
 pragma solidity 0.8.28;
 
 contract SimpleCrowdfund {
-    uint256 public amountRaised = 0;
     bool public campaignEnded;
     bool public goalReached;
     bool public fundsWithdrawned;
@@ -21,7 +20,6 @@ contract SimpleCrowdfund {
     event Contributed(address contributor, uint256 amount);
     event Withdraw(address owner, uint256 amount);
     event Refunded(address contributor, uint256 amount);
-    //event Raised(uint256 amountRaised, uint256 GOAL);
 
     mapping(address contributor => uint256 amountDonated) internal s_contributorToAmount;
     mapping(address contributor => bool isContributor) private s_alreadyContributed;
@@ -47,7 +45,7 @@ contract SimpleCrowdfund {
 
     modifier isGoalReached( // test that modifier
     ) {
-        if (amountRaised >= GOAL) revert SimpleCrowdfund__CampaignIsEnded();
+        if ((address(this).balance) - msg.value >= GOAL) revert SimpleCrowdfund__CampaignIsEnded();
         if (goalReached) revert SimpleCrowdfund__CampaignIsEnded(); //Second check in case of double withdraw
         _;
     }
@@ -68,21 +66,19 @@ contract SimpleCrowdfund {
         // The contract should keep track of the total amount raised. Check: Every time function is envoke, check if goal is reached
 
         if (msg.value < MINIMAL_AMOUNT) revert SimpleCrowdfund__ToLittleDonation();
-        if (amountRaised >= GOAL) goalReached = true;
+        if ((address(this).balance) - msg.value >= GOAL) goalReached = true;
         if (timePassed()) revert SimpleCrowdfund__CampaignIsEnded();
 
         if (s_alreadyContributed[msg.sender] == false) {
             s_ContributorsList.push(msg.sender);
             s_contributorToAmount[msg.sender] = s_contributorToAmount[msg.sender] + msg.value;
             s_alreadyContributed[msg.sender] = true;
-            amountRaised = amountRaised + msg.value;
             emit Contributed(msg.sender, msg.value);
-            if (amountRaised >= GOAL) goalReached = true;
+            if (address(this).balance >= GOAL) goalReached = true;
         } else {
             s_contributorToAmount[msg.sender] = s_contributorToAmount[msg.sender] + msg.value;
-            amountRaised = amountRaised + msg.value;
             emit Contributed(msg.sender, msg.value);
-            if (amountRaised >= GOAL) goalReached = true;
+            if (address(this).balance >= GOAL) goalReached = true;
         }
     }
 
@@ -102,10 +98,10 @@ contract SimpleCrowdfund {
         // check: After withdraw user should not be able to contribute more
         // If the user calling withdraw() is not the Project Owner, it should fail.
 
-        if (amountRaised >= GOAL && fundsWithdrawned == false) {
+        if (address(this).balance >= GOAL && fundsWithdrawned == false) {
             (bool callSuccess,) = payable(i_owner).call{value: address(this).balance}("");
             if (!callSuccess) revert SimpleCrowdfund__CallFailed();
-            else emit Withdraw(i_owner, amountRaised);
+            else emit Withdraw(i_owner, address(this).balance);
             fundsWithdrawned = true;
         } else {
             revert SimpleCrowdfund__CampaignIsNotEnded();
@@ -115,7 +111,7 @@ contract SimpleCrowdfund {
     function refund() public isWithdrawned {
         // check: If the goal is not reached by the time the deadline passes, backers should be able to get their ETH back by calling refund()
         // check:  If the goal is reached or if we are still before the deadline, calling refund() should fail.
-        if (timePassed() && amountRaised < GOAL) {
+        if (timePassed() && address(this).balance < GOAL) {
             if (s_alreadyContributed[msg.sender] == true) {
                 (bool callSuccess,) = payable(msg.sender).call{value: s_contributorToAmount[msg.sender]}("");
                 if (!callSuccess) revert SimpleCrowdfund__CallFailed();
@@ -139,8 +135,7 @@ contract SimpleCrowdfund {
         return s_ContributorsList.length;
     }
 
-    function GetContributorToAmount(address _contributor) external view returns (uint256){
+    function GetContributorToAmount(address _contributor) external view returns (uint256) {
         return s_contributorToAmount[_contributor];
     }
-    
 }
