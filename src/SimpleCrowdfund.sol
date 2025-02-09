@@ -22,7 +22,7 @@ contract SimpleCrowdfund {
     event Refunded(address contributor, uint256 amount);
 
     mapping(address contributor => uint256 amountDonated) internal s_contributorToAmount;
-    mapping(address contributor => bool isContributor) private s_alreadyContributed;
+    mapping(address contributor => bool isContributor) internal s_alreadyContributed;
 
     error SimpleCrowdfund__NoPermission();
     error SimpleCrowdfund__ZeroAddress();
