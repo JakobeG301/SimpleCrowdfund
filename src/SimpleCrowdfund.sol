@@ -101,10 +101,11 @@ contract SimpleCrowdfund {
         if (address(this).balance >= GOAL && fundsWithdrawned == false) {
             (bool callSuccess,) = payable(i_owner).call{value: address(this).balance}("");
             if (!callSuccess) revert SimpleCrowdfund__CallFailed();
+            if (timePassed()) revert SimpleCrowdfund__CampaignIsEnded();
             else emit Withdraw(i_owner, address(this).balance);
             fundsWithdrawned = true;
         } else {
-            revert SimpleCrowdfund__CampaignIsNotEnded();
+            revert SimpleCrowdfund__CallFailed();
         }
     }
 
@@ -116,6 +117,8 @@ contract SimpleCrowdfund {
                 (bool callSuccess,) = payable(msg.sender).call{value: s_contributorToAmount[msg.sender]}("");
                 if (!callSuccess) revert SimpleCrowdfund__CallFailed();
                 else emit Refunded(msg.sender, s_contributorToAmount[msg.sender]);
+            } else if (timePassed()) {
+                revert SimpleCrowdfund__CampaignIsEnded();
             } else {
                 revert SimpleCrowdfund__NoPermission();
             }
