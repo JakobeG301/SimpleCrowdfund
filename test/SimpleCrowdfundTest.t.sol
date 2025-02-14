@@ -30,8 +30,6 @@ contract SimpleCrowdfundTest is Test {
     }
 
     function test_OwnerisMsgSender() public {
-        console.log(simpleCrowdfund.i_owner());
-        console.log(address(this));
         assertEq(simpleCrowdfund.i_owner(), address(this));
     }
 
@@ -53,24 +51,17 @@ contract SimpleCrowdfundTest is Test {
         //  And the ContributorsList should be empty
         vm.deal(address(2), 100e18);
         vm.recordLogs();
-        console.log("balance:", contractBalance);
         address _owner = address(this);
 
         assertEq(simpleCrowdfund.i_owner(), _owner);
-        console.log("balance:", contractBalance);
         assertEq(contractBalance, 0);
-        console.log("secondsToComplete:", simpleCrowdfund.i_secToComplete());
-        console.log("timeInitiation:", simpleCrowdfund.i_timeInitiation());
-        console.log("deadline:", simpleCrowdfund.i_deadline());
         assertEq(simpleCrowdfund.i_deadline(), simpleCrowdfund.i_secToComplete() + block.timestamp);
         assertEq(simpleCrowdfund.GOAL(), 2e18);
         assertEq(contractBalance, 0);
         assertEq(simpleCrowdfund.goalReached(), false);
         assertEq(simpleCrowdfund.fundsWithdrawned(), false);
-        console.log("minimal amount", simpleCrowdfund.MINIMAL_AMOUNT());
         assertEq(simpleCrowdfund.MINIMAL_AMOUNT(), 1e15);
         // assertEq(simpleCrowdfund.getContributorsCount(), 0);
-        console.log(simpleCrowdfund.GetContributorsListLength());
         Vm.Log[] memory entiries = vm.getRecordedLogs();
         assertEq(entiries.length, 0, "Expected some events");
     }
@@ -80,38 +71,18 @@ contract SimpleCrowdfundTest is Test {
         //  Given the contract is deployed with zero address, i_secToComplete = 1 day, goal = 2 ETH
         //  Then the transaction should revert with SimpleCrowdfund__ZeroAddress() error
         //  And the deployment should fail
-
-        console.log(address(0));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ZeroAddress.selector);
         simpleCrowdfund = new SimpleCrowdfund(address(0), 30, 2e18);
     }
 
     function test_AddToContributorList() public {
         vm.recordLogs();
-
-        console.log("MINIMAL_AMOUNT:", simpleCrowdfund.MINIMAL_AMOUNT());
-        console.log("Current goal reached:", simpleCrowdfund.goalReached());
-        console.log("Funds withdrawn:", simpleCrowdfund.fundsWithdrawned());
-        console.log("Time passed:", simpleCrowdfund.timePassed());
-
         vm.deal(address(2), 100e18);
-
-        console.log("Array length1:", simpleCrowdfund.GetContributorsListLength());
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 1 ether}();
         checkBalance();
-
-        console.log("MINIMAL_AMOUNT:", simpleCrowdfund.MINIMAL_AMOUNT());
-        console.log("Current goal reached:", simpleCrowdfund.goalReached());
-        console.log("Funds withdrawn:", simpleCrowdfund.fundsWithdrawned());
-        console.log("Time passed:", simpleCrowdfund.timePassed());
-
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 1 ether, true, "Value is not mapped!");
-        console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
-
         // SimpleCrowdfund(payable(address(simpleCrowdfund))).contribute{value: 0.001 ether}();
-        console.log("Array length:", simpleCrowdfund.GetContributorsListLength());
-
         //(bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}(""); //Triggering receive function
         Vm.Log[] memory records = vm.getRecordedLogs();
     }
@@ -133,24 +104,18 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("");
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
         assertEq(contractBalance, 0.001 ether);
 
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, true, "Value is not mapped!");
-        console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
-
         assertEq(contractBalance, 0.001 ether);
     }
 
@@ -175,7 +140,6 @@ contract SimpleCrowdfundTest is Test {
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0, "Balance should be 0 ETH");
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0 ether, true, "Value is mapped!");
-        console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         assertEq(records.length, 0, "Event was emited!");
         assertEq(contractBalance, 0, "Amount raised is more than 0");
     }
@@ -194,14 +158,11 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
         (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("0x12");
-        console.log("a2", address(2));
         checkBalance();
         assertEq(success, true, "Transaction failed");
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0.001 ether, "Balance should be 0.001 ether");
-        console.log("mapping for Robert:", simpleCrowdfund.GetContributorToAmount(address(2)));
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, true, "Value is not mapped!");
-        console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         assertEq(records.length, 1, "Event was not emited!");
         assertEq(contractBalance, 0.001 ether, "Amount raised is not the 0.001 ether");
     }
@@ -224,11 +185,9 @@ contract SimpleCrowdfundTest is Test {
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
         payable(address(simpleCrowdfund)).call{value: 0 ether}("0x12");
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0 ether, "Balance should be 0 ether");
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0 ether, true, "Value is mapped!");
-        console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         assertEq(records.length, 0, "Event was emited!");
         assertEq(contractBalance, 0 ether, "Amount raised is more than 0 ether");
     }
@@ -254,7 +213,6 @@ contract SimpleCrowdfundTest is Test {
 
         assertEq(contractBalance, 0, "Balance should be 0 ETH");
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0 ether, true, "Value is mapped!");
-        console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(records.length, 0, "Event was emmited!");
         assertEq(contractBalance, 0 ether);
@@ -271,18 +229,14 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 0.002 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
         assertEq(contractBalance, 0.002 ether);
     }
@@ -298,18 +252,14 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 0.001 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
         assertEq(contractBalance, 0.001 ether);
     }
@@ -333,7 +283,6 @@ contract SimpleCrowdfundTest is Test {
         checkBalance();
         assertEq(contractBalance, 0, "Balance should be 0 ETH");
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0, true, "Value is not mapped!");
-        console.log("Amount mapped:", simpleCrowdfund.GetContributorToAmount(address(2)));
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0 ether);
         assertEq(records.length, 0, "Event was emmited!");
@@ -350,18 +299,14 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 0.001 ether + 1 wei}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
         assertEq(contractBalance, 0.001 ether + 1 wei, "Contribute failed!");
     }
@@ -379,18 +324,14 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 600, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
 
         simpleCrowdfund.contribute{value: 5 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound = true;
         assertEq(eventFound, true, "No event was emitet!");
@@ -413,17 +354,12 @@ contract SimpleCrowdfundTest is Test {
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 60, 10e18);
         vm.warp(simpleCrowdfund.i_timeInitiation() + simpleCrowdfund.i_secToComplete() + 10);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 1 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
-
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 0, "Different than 0");
         // if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound = true;
         // assertEq(eventFound, true, "No event was emitet!");
@@ -445,17 +381,13 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 600, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
         // console.log( "Array length4:",simpleCrowdfund.GetContributorsListLength());
         // assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound = true;
         assertEq(eventFound, true, "No event was emitet!");
@@ -489,18 +421,12 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(4));
         simpleCrowdfund.contribute{value: 5 ether}();
         checkBalance();
-
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 1 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 2, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -555,13 +481,9 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 600, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.startPrank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         simpleCrowdfund.contribute{value: 3 ether}();
         checkBalance();
@@ -571,7 +493,6 @@ contract SimpleCrowdfundTest is Test {
         assertEq(simpleCrowdfund.goalReached(), true, "Goal should be true!");
         assertEq(contractBalance, 10 ether);
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 2, "Different than 2");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound = true;
         assertEq(eventFound, true, "No event was emitet!");
@@ -608,13 +529,8 @@ contract SimpleCrowdfundTest is Test {
         checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         vm.prank(simpleCrowdfund.i_owner());
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 3, "Different than 3");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -623,18 +539,13 @@ contract SimpleCrowdfundTest is Test {
         assertEq(eventFound, 3);
 
         //After withdraw
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 1 ether}();
         checkBalance();
         assertEq(contractBalance, 0 ether, "Contract balance should be 0 ether");
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 0, "Different than 0");
         if (records.length > 0) {
             if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -659,17 +570,12 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600 * 24, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         // vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Charlie balance:", address(2).balance);
-
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 0");
 
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
@@ -683,8 +589,6 @@ contract SimpleCrowdfundTest is Test {
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 1 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(3).balance);
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1);
     }
 
@@ -722,13 +626,8 @@ contract SimpleCrowdfundTest is Test {
         checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         vm.prank(simpleCrowdfund.i_owner());
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 3, "Different than 3");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -765,15 +664,10 @@ contract SimpleCrowdfundTest is Test {
         // checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         vm.warp(simpleCrowdfund.i_deadline() + simpleCrowdfund.i_secToComplete() + 10);
         vm.prank(simpleCrowdfund.i_owner());
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CallFailed.selector);
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -806,14 +700,9 @@ contract SimpleCrowdfundTest is Test {
         // checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         vm.prank(simpleCrowdfund.i_owner());
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CallFailed.selector);
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -846,14 +735,9 @@ contract SimpleCrowdfundTest is Test {
         // checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", address(2));
         vm.prank(address(0));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__NoPermission.selector);
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", address(2));
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -886,14 +770,9 @@ contract SimpleCrowdfundTest is Test {
         checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", address(3));
         vm.prank(address(3));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__NoPermission.selector);
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", address(3));
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 2, "Different than 2");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -934,22 +813,11 @@ contract SimpleCrowdfundTest is Test {
         checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         vm.prank(simpleCrowdfund.i_owner());
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
-
-        console.log("Contract balance before second withdraw:", contractBalance);
-        console.log("Owners balance before second:", simpleCrowdfund.i_owner());
         vm.prank(simpleCrowdfund.i_owner());
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after second withdraw:", contractBalance);
-        console.log("Owners balance second before:", simpleCrowdfund.i_owner());
-
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 3, "Different than 3");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -976,15 +844,11 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600 * 24, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         // vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CampaignIsEnded.selector);
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Charlie balance:", address(2).balance);
-
         //Timetravel
         vm.warp(simpleCrowdfund.i_timeInitiation() + simpleCrowdfund.i_secToComplete() + 10);
 
@@ -992,7 +856,6 @@ contract SimpleCrowdfundTest is Test {
         simpleCrowdfund.refund();
 
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 2, "Different than 2");
 
         assertEq(address(2).balance, 100 ether, "Error");
@@ -1005,8 +868,6 @@ contract SimpleCrowdfundTest is Test {
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CallFailed.selector);
         simpleCrowdfund.withdraw();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", simpleCrowdfund.i_owner().balance);
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1);
     }
 
@@ -1035,14 +896,9 @@ contract SimpleCrowdfundTest is Test {
         checkBalance();
 
         //Withdraw
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         vm.prank(simpleCrowdfund.i_owner());
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CallFailed.selector);
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -1072,14 +928,9 @@ contract SimpleCrowdfundTest is Test {
         //Withdraw
 
         vm.warp(simpleCrowdfund.i_timeInitiation() + simpleCrowdfund.i_secToComplete() + 10);
-
-        console.log("Contract balance before withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         vm.prank(simpleCrowdfund.i_owner());
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__CallFailed.selector);
         simpleCrowdfund.withdraw();
-        console.log("Contract balance after withdraw:", contractBalance);
-        console.log("Owners balance before:", simpleCrowdfund.i_owner());
         Vm.Log[] memory records = vm.getRecordedLogs(); //logs consumed
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -1115,13 +966,9 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600 * 24, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
 
         vm.prank(address(3));
@@ -1133,7 +980,6 @@ contract SimpleCrowdfundTest is Test {
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
         assertEq(contractBalance, 9 ether);
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 2, "Different than 2");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         if (records[1].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -1145,15 +991,11 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(2));
         simpleCrowdfund.refund();
         checkBalance();
-
-        console.log("Chalie's balance:", address(2).balance);
         assertEq(contractBalance, 2 ether);
 
         vm.prank(address(3));
         simpleCrowdfund.refund();
         checkBalance();
-
-        console.log("Diana's balance:", address(3).balance);
         assertEq(contractBalance, 0 ether);
 
         if (records[0].topics[0] == keccak256("Refunded(address,uint256)")) eventFound += 1;
@@ -1177,13 +1019,9 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600 * 24, 10 ether);
-        console.log("Contract balance Before:", contractBalance);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
 
         vm.prank(address(3));
@@ -1195,25 +1033,15 @@ contract SimpleCrowdfundTest is Test {
         assertEq(simpleCrowdfund.goalReached(), true, "Goal should be true!");
         assertEq(contractBalance, 11 ether);
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 2, "Different than 2");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         if (records[1].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         assertEq(eventFound, 2, "Number of events is not 2");
-
-        console.log("timepassed:", simpleCrowdfund.timePassed());
-        console.log("goalreached:", simpleCrowdfund.goalReached());
-        console.log("Chalie's balance:", address(3).balance);
-        console.log("Contract balance After:", contractBalance);
-
         vm.startPrank(address(3));
         vm.expectRevert();
         simpleCrowdfund.refund();
         checkBalance();
         vm.stopPrank();
-
-        console.log("Chalie's balance:", address(2).balance);
-        console.log("Contract balance After:", contractBalance);
         assertEq(contractBalance, 11 ether);
     }
 
@@ -1239,13 +1067,9 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600 * 24, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
 
         vm.prank(address(3));
@@ -1257,7 +1081,6 @@ contract SimpleCrowdfundTest is Test {
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
         assertEq(contractBalance, 9 ether);
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 2, "Different than 2");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         if (records[1].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -1269,16 +1092,12 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(2));
         simpleCrowdfund.refund();
         checkBalance();
-
-        console.log("Chalie's balance:", address(2).balance);
         assertEq(contractBalance, 2 ether);
 
         vm.prank(address(2));
 
         simpleCrowdfund.refund();
         checkBalance();
-
-        console.log("Diana's balance:", address(2).balance);
         assertEq(contractBalance, 2 ether);
 
         if (records[0].topics[0] == keccak256("Refunded(address,uint256)")) eventFound += 1;
@@ -1309,13 +1128,9 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600 * 24, 10 ether);
-        console.log("Contract balance Before:", contractBalance);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
 
         vm.prank(address(3));
@@ -1330,20 +1145,11 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(simpleCrowdfund.i_owner());
         simpleCrowdfund.withdraw();
         checkBalance();
-
-        console.log("timepassed:", simpleCrowdfund.timePassed());
-        console.log("goalreached:", simpleCrowdfund.goalReached());
-        console.log("owners balance:", simpleCrowdfund.i_owner().balance);
-        console.log("Contract balance After:", contractBalance);
-
         vm.startPrank(address(3));
         vm.expectRevert();
         simpleCrowdfund.refund();
         checkBalance();
         vm.stopPrank();
-
-        console.log("Chalie's balance:", address(2).balance);
-        console.log("Contract balance After:", contractBalance);
         assertEq(contractBalance, 0 ether);
         assertEq(simpleCrowdfund.fundsWithdrawned(), true);
 
@@ -1353,8 +1159,6 @@ contract SimpleCrowdfundTest is Test {
         if (records[1].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         if (records[2].topics[0] == keccak256("Withdraw(address,uint256)")) eventFound += 1;
         if (records[2].topics[0] == keccak256("Refunded(address,uint256)")) eventFound += 1;
-
-        console.log("records length:", records.length);
         assertEq(records.length, 3, "Different than 3");
         assertEq(eventFound, 3, "Number of events is not 3");
 
@@ -1378,13 +1182,9 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600 * 24, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Alice balance:", address(2).balance);
-
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
 
         vm.prank(address(3));
@@ -1396,7 +1196,6 @@ contract SimpleCrowdfundTest is Test {
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be false!");
         assertEq(contractBalance, 9 ether);
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 2, "Different than 2");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
         if (records[1].topics[0] == keccak256("Contributed(address,uint256)")) eventFound += 1;
@@ -1408,15 +1207,11 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(2));
         simpleCrowdfund.refund();
         checkBalance();
-
-        console.log("Chalie's balance:", address(2).balance);
         assertEq(contractBalance, 2 ether);
 
         vm.prank(address(3));
         simpleCrowdfund.refund();
         checkBalance();
-
-        console.log("Diana's balance:", address(3).balance);
         assertEq(contractBalance, 0 ether);
 
         if (records[0].topics[0] == keccak256("Refunded(address,uint256)")) eventFound += 1;
@@ -1443,14 +1238,10 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contranct balance", contractBalance);
-
         vm.deal(address(3), 100 ether);
         vm.prank(address(3));
         simpleCrowdfund.contribute{value: 2 ether}();
         checkBalance();
-        console.log("Contranct balance", contractBalance);
-
         assertEq(contractBalance, 9 ether, "Contract balance should be 9 ether");
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be not reached");
 
@@ -1487,14 +1278,10 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contranct balance", contractBalance);
-
         vm.deal(address(3), 100 ether);
         vm.prank(address(3));
         simpleCrowdfund.contribute{value: 2 ether}();
         checkBalance();
-        console.log("Contranct balance", contractBalance);
-
         assertEq(contractBalance, 9 ether, "Contract balance should be 9 ether");
         assertEq(simpleCrowdfund.goalReached(), false, "Goal should be not reached");
 
