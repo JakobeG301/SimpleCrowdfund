@@ -121,7 +121,6 @@ contract SimpleCrowdfundTest is Test {
     /////////////////////////////////////////////////////////////////////////////*/
 
     function test_SendByReceive() public {
-        // to do: And the contribution mapping for Robert should be 0.001 ETH
         // Scenario: Contributing through the receive function
         // Given the contract is deployed with Bob's address, goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
         // And the Robert has 100 ETH in his wallet
@@ -155,7 +154,6 @@ contract SimpleCrowdfundTest is Test {
     }
 
     function test_SendLessThanMinimumByReceive() public {
-        // to do: And the contribution mapping for Robert should be 0 ETH
         // Scenario: Contributing through the receive function
         // Given the contract is deployed with Bob's address, goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
         // And the Robert has 100 ETH in his wallet

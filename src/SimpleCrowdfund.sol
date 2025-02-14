@@ -61,8 +61,8 @@ contract SimpleCrowdfund {
     }
 
     function contribute() public payable isWithdrawned isGoalReached {
-        // Check: If a user calls contribute() after the deadline, the call should revert or fail.
-        // The contract should keep track of the total amount raised. Check: Every time function is envoke, check if goal is reached
+        // check: If a user calls contribute() after the deadline, the call should revert or fail.
+        // check: The contract should keep track of the total amount raised. Check: Every time function is envoke, check if goal is reached
 
         if (msg.value < MINIMAL_AMOUNT) revert SimpleCrowdfund__ToLittleDonation();
         if ((address(this).balance) - msg.value >= GOAL) goalReached = true;
@@ -90,12 +90,12 @@ contract SimpleCrowdfund {
     }
 
     function withdraw() public onlyOwner isWithdrawned {
-        // DONE check: only the Project Owner should be able to withdraw the entire balance.
-        // DONE check: If the goal is reached on or before the deadline, only the Project Owner should be able to withdraw the entire balance.
-        // DONE check: If the owner tries to call withdraw() before the deadline but the goal isn’t reached yet, it should fail.
-        // DONE check: If the user calling withdraw() is not the Project Owner, it should fail.
+        // check: only the Project Owner should be able to withdraw the entire balance.
+        // check: If the goal is reached on or before the deadline, only the Project Owner should be able to withdraw the entire balance.
+        // check: If the owner tries to call withdraw() before the deadline but the goal isn’t reached yet, it should fail.
+        // check: If the user calling withdraw() is not the Project Owner, it should fail.
         // check: After withdraw user should not be able to contribute more
-        // If the user calling withdraw() is not the Project Owner, it should fail.
+        // check: If the user calling withdraw() is not the Project Owner, it should fail.
 
         if (address(this).balance >= GOAL && fundsWithdrawned == false) {
             (bool callSuccess,) = payable(i_owner).call{value: address(this).balance}("");
