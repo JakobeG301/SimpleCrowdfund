@@ -10,7 +10,7 @@ contract SimpleCrowdfund {
 
     address public immutable i_owner = payable(msg.sender);
     uint256 public immutable i_timeInitiation = block.timestamp; // Setting up initiation time
-    uint256 public immutable GOAL = 2e18; //2 eth in wei
+    uint256 public immutable i_goal = 2e18; //2 eth in wei
     uint256 public immutable i_secToComplete;
     uint256 public immutable i_deadline = i_timeInitiation + i_secToComplete; // final time to complete the task
 
@@ -36,26 +36,26 @@ contract SimpleCrowdfund {
         _;
     }
 
-    modifier isWithdrawned( // test that modifier
+    modifier isWithdrawned( 
     ) {
         if (fundsWithdrawned) revert SimpleCrowdfund__CampaignIsEnded();
         _;
     }
 
-    modifier isGoalReached( // test that modifier
+    modifier isGoalReached( 
     ) {
-        if ((address(this).balance) - msg.value >= GOAL) revert SimpleCrowdfund__CampaignIsEnded();
+        if ((address(this).balance) - msg.value >= i_goal) revert SimpleCrowdfund__CampaignIsEnded();
         if (goalReached) revert SimpleCrowdfund__CampaignIsEnded(); //Second check in case of double withdraw
         _;
     }
 
-    constructor(address _owner, uint256 _secToComplete, uint256 _GOAL) {
+    constructor(address _owner, uint256 _secToComplete, uint256 _goal) {
         if (_owner == address(0)) {
             revert SimpleCrowdfund__ZeroAddress();
         }
         i_owner = _owner;
         i_timeInitiation = block.timestamp;
-        GOAL = _GOAL;
+        i_goal = _goal;
         i_secToComplete = _secToComplete;
         i_deadline = i_timeInitiation + _secToComplete;
     }
@@ -65,7 +65,7 @@ contract SimpleCrowdfund {
         // check: The contract should keep track of the total amount raised. Check: Every time function is envoke, check if goal is reached
 
         if (msg.value < MINIMAL_AMOUNT) revert SimpleCrowdfund__ToLittleDonation();
-        if ((address(this).balance) - msg.value >= GOAL) goalReached = true;
+        if ((address(this).balance) - msg.value >= i_goal) goalReached = true;
         if (timePassed()) revert SimpleCrowdfund__CampaignIsEnded();
 
         if (s_alreadyContributed[msg.sender] == false) {
@@ -73,11 +73,11 @@ contract SimpleCrowdfund {
             s_contributorToAmount[msg.sender] = s_contributorToAmount[msg.sender] + msg.value;
             s_alreadyContributed[msg.sender] = true;
             emit Contributed(msg.sender, msg.value);
-            if (address(this).balance >= GOAL) goalReached = true;
+            if (address(this).balance >= i_goal) goalReached = true;
         } else {
             s_contributorToAmount[msg.sender] = s_contributorToAmount[msg.sender] + msg.value;
             emit Contributed(msg.sender, msg.value);
-            if (address(this).balance >= GOAL) goalReached = true;
+            if (address(this).balance >= i_goal) goalReached = true;
         }
     }
 
@@ -97,7 +97,7 @@ contract SimpleCrowdfund {
         // check: After withdraw user should not be able to contribute more
         // check: If the user calling withdraw() is not the Project Owner, it should fail.
 
-        if (address(this).balance >= GOAL && fundsWithdrawned == false) {
+        if (address(this).balance >= i_goal && fundsWithdrawned == false) {
             (bool callSuccess,) = payable(i_owner).call{value: address(this).balance}("");
             if (!callSuccess) revert SimpleCrowdfund__CallFailed();
             if (timePassed()) {
@@ -114,7 +114,7 @@ contract SimpleCrowdfund {
     function refund() public isWithdrawned {
         // check: If the goal is not reached by the time the deadline passes, backers should be able to get their ETH back by calling refund()
         // check:  If the goal is reached or if we are still before the deadline, calling refund() should fail.
-        if (timePassed() && address(this).balance < GOAL && msg.sender != i_owner) {
+        if (timePassed() && address(this).balance < i_goal && msg.sender != i_owner) {
             if (s_alreadyContributed[msg.sender] == true) {
                 (bool callSuccess,) = payable(msg.sender).call{value: s_contributorToAmount[msg.sender]}("");
                 if (!callSuccess) {
