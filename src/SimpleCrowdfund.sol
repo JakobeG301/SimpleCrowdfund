@@ -8,11 +8,11 @@ contract SimpleCrowdfund {
 
     uint256 public constant MINIMAL_AMOUNT = 1e15; // ~3$
 
-    address public immutable i_owner = payable(msg.sender);
-    uint256 public immutable i_timeInitiation = block.timestamp; // Setting up initiation time
-    uint256 public immutable i_goal = 2e18; //2 eth in wei
+    address public immutable i_owner;
+    uint256 public immutable i_timeInitiation; // Setting up initiation time
+    uint256 public immutable i_goal;
     uint256 public immutable i_secToComplete;
-    uint256 public immutable i_deadline = i_timeInitiation + i_secToComplete; // final time to complete the task
+    uint256 public immutable i_deadline; // final time to complete the task
 
     address[] public s_ContributorsList;
 
