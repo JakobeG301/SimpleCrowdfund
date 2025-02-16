@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.28;
 
-import {Test, console} from "lib/forge-std/src/Test.sol";
+import {Test} from "lib/forge-std/src/Test.sol";
 import {SimpleCrowdfund} from "../src/SimpleCrowdfund.sol";
 import {AttackersContract} from "../test/contracts/AttackersContract.sol";
 

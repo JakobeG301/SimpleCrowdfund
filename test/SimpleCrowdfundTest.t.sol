@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.28;
 
-import {Test, Vm, console} from "lib/forge-std/src/Test.sol";
+import {Test, Vm} from "lib/forge-std/src/Test.sol";
 import {SimpleCrowdfund} from "../src/SimpleCrowdfund.sol";
 
 contract SimpleCrowdfundTest is Test {
@@ -439,15 +439,11 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 600, 10e18);
-        console.log("Contract balance Before:", contractBalance);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-        console.log("Contract balance After:", contractBalance);
-        console.log("Robert balance:", address(2).balance);
         Vm.Log[] memory records = vm.getRecordedLogs();
-        console.log("records length:", records.length);
         assertEq(records.length, 1, "Different than 1");
         if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound = true;
         assertEq(eventFound, true, "No event was emitet!");
