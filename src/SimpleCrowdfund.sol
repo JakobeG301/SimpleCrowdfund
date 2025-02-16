@@ -85,9 +85,6 @@ contract SimpleCrowdfund {
         contribute();
     }
 
-    fallback() external payable {
-        contribute();
-    }
 
     function withdraw() public onlyOwner isWithdrawned {
         // check: only the Project Owner should be able to withdraw the entire balance.
