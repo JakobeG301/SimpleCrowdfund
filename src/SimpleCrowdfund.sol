@@ -37,14 +37,12 @@ contract SimpleCrowdfund {
         _;
     }
 
-    modifier isWithdrawned( 
-    ) {
+    modifier isWithdrawned() {
         if (fundsWithdrawned) revert SimpleCrowdfund__CampaignIsEnded();
         _;
     }
 
-    modifier isGoalReached( 
-    ) {
+    modifier isGoalReached() {
         if ((address(this).balance) - msg.value >= i_goal) revert SimpleCrowdfund__CampaignIsEnded();
         if (goalReached) revert SimpleCrowdfund__CampaignIsEnded(); //Second check in case of double withdraw
         _;
@@ -86,7 +84,6 @@ contract SimpleCrowdfund {
         emit Received(msg.sender, msg.value);
         contribute();
     }
-
 
     function withdraw() public onlyOwner isWithdrawned {
         // check: only the Project Owner should be able to withdraw the entire balance.

@@ -475,7 +475,7 @@ contract SimpleCrowdfundTest is Test {
         simpleCrowdfund.contribute{value: 3 ether}();
         checkBalance();
         vm.stopPrank();
-        
+
         assertEq(simpleCrowdfund.GetContributorsListLength(), 1, "its not 1");
         assertEq(simpleCrowdfund.goalReached(), true, "Goal should be true!");
         assertEq(contractBalance, 10 ether);
@@ -674,7 +674,6 @@ contract SimpleCrowdfundTest is Test {
         vm.prank(address(3));
         simpleCrowdfund.contribute{value: 7 ether}();
         checkBalance();
-
 
         //Withdraw
         vm.prank(simpleCrowdfund.i_owner());
