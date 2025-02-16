@@ -19,6 +19,7 @@ contract SimpleCrowdfund {
     event Contributed(address contributor, uint256 amount);
     event Withdraw(address owner, uint256 amount);
     event Refunded(address contributor, uint256 amount);
+    event Received(address contributor, uint256 amount);
 
     mapping(address contributor => uint256 amountDonated) internal s_contributorToAmount;
     mapping(address contributor => bool isContributor) internal s_alreadyContributed;
@@ -82,6 +83,7 @@ contract SimpleCrowdfund {
     }
 
     receive() external payable {
+        emit Received(msg.sender, msg.value);
         contribute();
     }
 
