@@ -17,9 +17,9 @@ contract SimpleCrowdfundTest is Test {
     function setUp() external {
         address _owner = address(this);
         uint256 _secToComplete = 30;
-        uint256 _GOAL = 2e18;
+        uint256 i_goal = 2e18;
 
-        simpleCrowdfund = new SimpleCrowdfund(_owner, _secToComplete, _GOAL);
+        simpleCrowdfund = new SimpleCrowdfund(_owner, _secToComplete, i_goal);
 
         checkBalance();
         vm.recordLogs();
@@ -56,7 +56,7 @@ contract SimpleCrowdfundTest is Test {
         assertEq(simpleCrowdfund.i_owner(), _owner);
         assertEq(contractBalance, 0);
         assertEq(simpleCrowdfund.i_deadline(), simpleCrowdfund.i_secToComplete() + block.timestamp);
-        assertEq(simpleCrowdfund.GOAL(), 2e18);
+        assertEq(simpleCrowdfund.i_goal(), 2e18);
         assertEq(contractBalance, 0);
         assertEq(simpleCrowdfund.goalReached(), false);
         assertEq(simpleCrowdfund.fundsWithdrawned(), false);
@@ -152,9 +152,10 @@ contract SimpleCrowdfundTest is Test {
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600, 2e18);
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
+        vm.expectRevert();
         (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("0x12");
         checkBalance();
-        assertEq(success, true, "Transaction failed");
+        assertEq(success, false, "Transaction succed, but should not!");
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0.001 ether, "Balance should be 0.001 ether");
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, true, "Value is not mapped!");
