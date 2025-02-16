@@ -95,7 +95,8 @@ contract SimpleCrowdfundTest is Test {
         // Given the contract is deployed with Bob's address, goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
         // And the Robert has 100 ETH in his wallet
         // When Robert sends 0.001 ETH to the contract with no data
-        // Then the amountRaised in the contract should be 0.001 ETH
+        // Then event Received should be emitted
+        // And the amountRaised in the contract should be 0.001 ETH
         // And the contribution mapping for Robert should be 0.001 ETH
         // And the contract should log a "Contributed" event with (Robert, 0.001 ETH)
 
@@ -108,7 +109,7 @@ contract SimpleCrowdfundTest is Test {
         checkBalance();
 
         Vm.Log[] memory records = vm.getRecordedLogs();
-        assertEq(records.length, 1, "Different than 1");
+        assertEq(records.length, 2, "Different than 2");
         assertEq(contractBalance, 0.001 ether);
 
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, true, "Value is not mapped!");
@@ -120,7 +121,8 @@ contract SimpleCrowdfundTest is Test {
         // Given the contract is deployed with Bob's address, goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
         // And the Robert has 100 ETH in his wallet
         // When Robert sends 0.0001 ETH to the contract with no data
-        // Then the transaction should revert with SimpleCrowdfund__ToLittleDonation() error
+        // Then event Received should be emitted
+        // And the transaction should revert with SimpleCrowdfund__ToLittleDonation() error
         // And the amountRaised in the contract remains 0 ETH
         // And the contribution mapping for Robert should be 0 ETH
         // And the contract should not log a "Contributed" event
@@ -135,7 +137,7 @@ contract SimpleCrowdfundTest is Test {
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0, "Balance should be 0 ETH");
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0 ether, true, "Value is mapped!");
-        assertEq(records.length, 0, "Event was emited!");
+        assertEq(records.length, 1, "Different than 1");
         assertEq(contractBalance, 0, "Amount raised is more than 0");
     }
 
@@ -144,9 +146,10 @@ contract SimpleCrowdfundTest is Test {
         // Given the contract is deployed with Bob's address, goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
         // And the Robert has 100 ETH in his wallet
         // When Robert sends 0.001 ETH to the contract with not matching function signature
-        // Then the amountRaised in the contract should be 0.001 ETH
-        // And the contribution mapping for Robert should be 0.001 ETH
-        // And the contract should log a "Contributed" event with (Robert, 0.001 ETH)
+        // Then the transaction should revert
+        // And the amountRaised in the contract should be 0 ETH
+        // And the contribution mapping should not exist for Robert
+        // And the contract should not log a "Contributed" event with (Robert, 0 ETH)
 
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600, 2e18);
@@ -155,12 +158,11 @@ contract SimpleCrowdfundTest is Test {
         vm.expectRevert();
         (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("0x12");
         checkBalance();
-        assertEq(success, false, "Transaction succed, but should not!");
         Vm.Log[] memory records = vm.getRecordedLogs();
-        assertEq(contractBalance, 0.001 ether, "Balance should be 0.001 ether");
-        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, true, "Value is not mapped!");
-        assertEq(records.length, 1, "Event was not emited!");
-        assertEq(contractBalance, 0.001 ether, "Amount raised is not the 0.001 ether");
+        assertEq(contractBalance, 0 ether, "Balance should be 0 ether");
+        assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 0.001 ether, false, "Value is mapped!");
+        assertEq(records.length, 0, "Event was emited!");
+        assertEq(contractBalance, 0 ether, "Amount raised is more than 0 ether");
     }
 
     function test_SendLessThanMinimumByFallback() public {
@@ -168,17 +170,17 @@ contract SimpleCrowdfundTest is Test {
         // Given the contract is deployed with Bob's address, goal = 2 ETH, deadline is in 1 day and minimalAmount = 0.001 ETH
         // And the Robert has 100 ETH in his wallet
         // When Robert sends 0.0001 ETH to the contract with not matching function signature
-        // Then the transaction should revert with SimpleCrowdfund__ToLittleDonation() error
-        // And the amountRaised in the contract remains 0 ETH
-        // And the contribution mapping for Robert should be 0 ETH
-        // And the contract should not log a "Contributed" event
+        // Then the transaction should revert
+        // And the amountRaised in the contract should be 0 ETH
+        // And the contribution mapping should not exist for Robert
+        // And the contract should not log a "Contributed" event with (Robert, 0 ETH)
 
         vm.deal(address(2), 100e18);
         vm.recordLogs();
         simpleCrowdfund = new SimpleCrowdfund(address(1), 3600, 2e18);
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
-        vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
+        vm.expectRevert();
         payable(address(simpleCrowdfund)).call{value: 0 ether}("0x12");
         checkBalance();
         Vm.Log[] memory records = vm.getRecordedLogs();
