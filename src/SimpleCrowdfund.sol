@@ -5,6 +5,7 @@ pragma solidity 0.8.28;
 contract SimpleCrowdfund {
     bool public goalReached;
     bool public fundsWithdrawned;
+    bool public testowa = false;
 
     uint256 public constant MINIMAL_AMOUNT = 1e15; // ~3$
 
@@ -46,6 +47,13 @@ contract SimpleCrowdfund {
         if ((address(this).balance) - msg.value >= i_goal) revert SimpleCrowdfund__CampaignIsEnded();
         if (goalReached) revert SimpleCrowdfund__CampaignIsEnded(); //Second check in case of double withdraw
         _;
+    }
+
+    modifier NonReentrant{
+    if(testowa == true){revert SimpleCrowdfund__CallFailed();}
+    testowa = true;
+    _;
+    testowa = false;
     }
 
     constructor(address _owner, uint256 _secToComplete, uint256 _goal) {
@@ -107,7 +115,7 @@ contract SimpleCrowdfund {
         }
     }
 
-    function refund() public isWithdrawned {
+    function refund() public isWithdrawned NonReentrant{
         // check: If the goal is not reached by the time the deadline passes, backers should be able to get their ETH back by calling refund()
         // check:  If the goal is reached or if we are still before the deadline, calling refund() should fail.
         if (timePassed() && address(this).balance < i_goal && msg.sender != i_owner) {

@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.28;
 
-import {Test} from "lib/forge-std/src/Test.sol";
+import {Test, Vm} from "lib/forge-std/src/Test.sol";
 import {SimpleCrowdfund} from "../src/SimpleCrowdfund.sol";
 import {AttackersContract} from "../test/contracts/AttackersContract.sol";
 
@@ -31,6 +31,8 @@ contract AttackersContractTest is Test{
 
 
     function test_ReentrancyAttack() public{
+        
+        vm.recordLogs();
         //deploy simpleCrowdfund
         //deploy attackersCrowdfund
   
@@ -56,13 +58,20 @@ contract AttackersContractTest is Test{
         vm.warp(simpleCrowdfund.i_deadline() + 100);
         
         //refund by attacker
+        vm.expectRevert();
         attackersContract.StartAttack();
+
+        assertEq(contractBalance, 5 ether, "there should be 5 ether left!");
 
         //check if attacker drained all the funds
         vm.prank(address(1));
-        vm.expectRevert();
         simpleCrowdfund.refund();
         checkBalance();
 
+        assertEq(contractBalance, 3 ether, "there should be 3 ether left!");
+
+
+        Vm.Log[] memory records = vm.getRecordedLogs();
+        assertEq(records.length, 4, "Wrong number of events");
     }
 }
