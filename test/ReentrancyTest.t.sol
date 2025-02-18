@@ -6,8 +6,7 @@ import {Test, Vm} from "lib/forge-std/src/Test.sol";
 import {SimpleCrowdfund} from "../src/SimpleCrowdfund.sol";
 import {AttackersContract} from "../test/contracts/AttackersContract.sol";
 
-contract AttackersContractTest is Test{
-
+contract AttackersContractTest is Test {
     SimpleCrowdfund simpleCrowdfund;
     AttackersContract attackersContract;
 
@@ -29,13 +28,11 @@ contract AttackersContractTest is Test{
         vm.recordLogs();
     }
 
-
-    function test_ReentrancyAttack() public{
-        
+    function test_ReentrancyAttack() public {
         vm.recordLogs();
         //deploy simpleCrowdfund
         //deploy attackersCrowdfund
-  
+
         //make first contribution
         vm.deal(address(1), 100 ether);
         vm.deal(address(2), 100 ether);
@@ -56,7 +53,7 @@ contract AttackersContractTest is Test{
 
         //timetravel
         vm.warp(simpleCrowdfund.i_deadline() + 100);
-        
+
         //refund by attacker
         vm.expectRevert();
         attackersContract.StartAttack();
@@ -69,7 +66,6 @@ contract AttackersContractTest is Test{
         checkBalance();
 
         assertEq(contractBalance, 3 ether, "there should be 3 ether left!");
-
 
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(records.length, 4, "Wrong number of events");

@@ -10,7 +10,7 @@ contract SimpleCrowdfundTest is Test {
 
     uint256 contractBalance;
 
-    function checkBalance() internal returns (uint256) {
+    function checkBalance() internal returns (uint256 balance) {
         contractBalance = address(simpleCrowdfund).balance;
     }
 
@@ -25,11 +25,11 @@ contract SimpleCrowdfundTest is Test {
         vm.recordLogs();
     }
 
-    function test_minimalAmountIsSet() public {
+    function test_minimalAmountIsSet() public view {
         assertEq(simpleCrowdfund.timePassed(), false);
     }
 
-    function test_OwnerisMsgSender() public {
+    function test_OwnerIsMsgSender() public view {
         assertEq(simpleCrowdfund.i_owner(), address(this));
     }
 
@@ -75,15 +75,17 @@ contract SimpleCrowdfundTest is Test {
     }
 
     function test_AddToContributorList() public {
+        bool eventFound = false;
+
         vm.recordLogs();
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
         simpleCrowdfund.contribute{value: 1 ether}();
         checkBalance();
         assertEq(simpleCrowdfund.GetContributorToAmount(address(2)) == 1 ether, true, "Value is not mapped!");
-        // SimpleCrowdfund(payable(address(simpleCrowdfund))).contribute{value: 0.001 ether}();
-        //(bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}(""); //Triggering receive function
         Vm.Log[] memory records = vm.getRecordedLogs();
+        if (records[0].topics[0] == keccak256("Contributed(address,uint256)")) eventFound = true;
+        assertEq(eventFound, true, "No event was emitet!");
     }
 
     /*/////////////////////////////////////////////////////////////////////////////
@@ -105,7 +107,7 @@ contract SimpleCrowdfundTest is Test {
         simpleCrowdfund = new SimpleCrowdfund(address(1), 30, 2e18);
         vm.deal(address(2), 100e18);
         vm.prank(address(2));
-        (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("");
+        payable(address(simpleCrowdfund)).call{value: 0.001 ether}("");
         checkBalance();
 
         Vm.Log[] memory records = vm.getRecordedLogs();
@@ -132,7 +134,7 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
         vm.expectRevert(SimpleCrowdfund.SimpleCrowdfund__ToLittleDonation.selector);
-        (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.0001 ether}("");
+        payable(address(simpleCrowdfund)).call{value: 0.0001 ether}("");
         checkBalance();
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0, "Balance should be 0 ETH");
@@ -156,7 +158,7 @@ contract SimpleCrowdfundTest is Test {
         vm.deal(address(2), 100 ether);
         vm.prank(address(2));
         vm.expectRevert();
-        (bool success,) = payable(address(simpleCrowdfund)).call{value: 0.001 ether}("0x12");
+        payable(address(simpleCrowdfund)).call{value: 0.001 ether}("0x12");
         checkBalance();
         Vm.Log[] memory records = vm.getRecordedLogs();
         assertEq(contractBalance, 0 ether, "Balance should be 0 ether");
@@ -342,7 +344,6 @@ contract SimpleCrowdfundTest is Test {
         //   When Bob calls "contribute()" with 1 ETH
         //   Then the transaction should revert with SimpleCrowdfund__CampaignIsEnded()
         //   And the amountRaised in the contract remains 0 ETH
-        bool eventFound = false;
 
         vm.deal(address(2), 100e18);
         vm.recordLogs();
@@ -547,8 +548,6 @@ contract SimpleCrowdfundTest is Test {
         //   And the backers calls "refund()"
         //   Then the transaction should succeed
         //   And the contract should log a "Refunded" event
-
-        bool eventFound = false;
 
         vm.deal(address(2), 100e18);
         vm.recordLogs();
@@ -805,8 +804,6 @@ contract SimpleCrowdfundTest is Test {
         //   Then the transaction should fail with SimpleCrowdfund__CampaignIsNotEnded()
         //   And the contract should not log a "Withdrawn" event
         //   And the owner’s balance should not increase
-
-        bool eventFound = false;
 
         vm.deal(address(2), 100e18);
         vm.recordLogs();

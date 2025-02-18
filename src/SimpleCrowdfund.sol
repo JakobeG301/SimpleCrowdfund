@@ -5,7 +5,7 @@ pragma solidity 0.8.28;
 contract SimpleCrowdfund {
     bool public goalReached;
     bool public fundsWithdrawned;
-    bool public testowa = false;
+    bool public isExecuting = false;
 
     uint256 public constant MINIMAL_AMOUNT = 1e15; // ~3$
 
@@ -38,7 +38,7 @@ contract SimpleCrowdfund {
         _;
     }
 
-    modifier isWithdrawned() {
+    modifier isWithdrawn() {
         if (fundsWithdrawned) revert SimpleCrowdfund__CampaignIsEnded();
         _;
     }
@@ -49,11 +49,11 @@ contract SimpleCrowdfund {
         _;
     }
 
-    modifier NonReentrant{
-    if(testowa == true){revert SimpleCrowdfund__CallFailed();}
-    testowa = true;
-    _;
-    testowa = false;
+    modifier NonReentrant() {
+        if (isExecuting == true) revert SimpleCrowdfund__CallFailed();
+        isExecuting = true;
+        _;
+        isExecuting = false;
     }
 
     constructor(address _owner, uint256 _secToComplete, uint256 _goal) {
@@ -67,7 +67,7 @@ contract SimpleCrowdfund {
         i_deadline = i_timeInitiation + _secToComplete;
     }
 
-    function contribute() public payable isWithdrawned isGoalReached {
+    function contribute() public payable isWithdrawn isGoalReached {
         // check: If a user calls contribute() after the deadline, the call should revert or fail.
         // check: The contract should keep track of the total amount raised. Check: Every time function is envoke, check if goal is reached
 
@@ -93,7 +93,7 @@ contract SimpleCrowdfund {
         contribute();
     }
 
-    function withdraw() public onlyOwner isWithdrawned {
+    function withdraw() public onlyOwner isWithdrawn {
         // check: only the Project Owner should be able to withdraw the entire balance.
         // check: If the goal is reached on or before the deadline, only the Project Owner should be able to withdraw the entire balance.
         // check: If the owner tries to call withdraw() before the deadline but the goal isn’t reached yet, it should fail.
@@ -115,7 +115,7 @@ contract SimpleCrowdfund {
         }
     }
 
-    function refund() public isWithdrawned NonReentrant{
+    function refund() public isWithdrawn NonReentrant {
         // check: If the goal is not reached by the time the deadline passes, backers should be able to get their ETH back by calling refund()
         // check:  If the goal is reached or if we are still before the deadline, calling refund() should fail.
         if (timePassed() && address(this).balance < i_goal && msg.sender != i_owner) {
